@@ -1,5 +1,3 @@
-# spam_email_detection.py
-
 import streamlit as st
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -10,11 +8,9 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Load the dataset
-@st.cache
+@st.cache_data
 def load_data():
-    data = pd.read_csv('spam.csv', encoding='latin-1')
-    data = data[['v1', 'v2']]
-    data.columns = ['label', 'text']
+    data = pd.read_csv('spam.csv')
     return data
 
 data = load_data()
@@ -24,18 +20,14 @@ st.title("Spam Email Detection")
 st.write("Dataset Overview")
 st.write(data.head())
 
-if st.checkbox("Show Dataset Summary"):
-    st.write(data.describe())
+st.write(data.describe())
 
-if st.checkbox("Show Data Distribution"):
-    st.write(data['label'].value_counts())
-    st.bar_chart(data['label'].value_counts())
-
-# Encode labels
-data['label'] = data['label'].map({'ham': 0, 'spam': 1})
+st.write(data['spam'].value_counts())
+st.bar_chart(data['spam'].value_counts())
 
 # Split data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(data['text'], data['label'], test_size=0.2, random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    data['text'], data['spam'], test_size=0.2, random_state=42)
 
 # Vectorize the text data
 vectorizer = CountVectorizer()
@@ -61,14 +53,23 @@ sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=ax)
 st.pyplot(fig)
 
 # Word frequency (additional visualization)
-if st.checkbox("Show Word Frequencies"):
-    ham_words = ' '.join(data[data['label'] == 0]['text'])
-    spam_words = ' '.join(data[data['label'] == 1]['text'])
-    ham_wc = pd.Series(ham_words.split()).value_counts().head(20)
-    spam_wc = pd.Series(spam_words.split()).value_counts().head(20)
+ham_words = ' '.join(data[data['spam'] == 0]['text'])
+spam_words = ' '.join(data[data['spam'] == 1]['text'])
+ham_wc = pd.Series(ham_words.split()).value_counts().head(20)
+spam_wc = pd.Series(spam_words.split()).value_counts().head(20)
 
-    st.write("Top words in non-spam emails")
-    st.bar_chart(ham_wc)
+st.write("Top words in non-spam emails")
+st.bar_chart(ham_wc)
 
-    st.write("Top words in spam emails")
-    st.bar_chart(spam_wc)
+st.write("Top words in spam emails")
+st.bar_chart(spam_wc)
+
+# Text input for user to input an email
+st.write("### Predict if an Email is Spam or Not")
+user_input = st.text_area("Enter the email text here:")
+if st.button("Submit"):
+    if user_input:
+        user_input_vec = vectorizer.transform([user_input])
+        prediction = model.predict(user_input_vec)
+        prediction_label = "Spam" if prediction[0] == 1 else "Not Spam"
+        st.write(f"Prediction: {prediction_label}")
